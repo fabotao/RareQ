@@ -1,0 +1,19 @@
+Package: RareQ
+Type: Package
+Title: What the Package Does (Title Case)
+Version: 0.1.0
+Author: Botao Fa
+Maintainer: Botao Fa <fabotao@sina.com>
+Description: Accurate, highly efficient and scalable approach for inferring rare cell types via mutual-connectivity-based network-propagation.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 4.0.0)
+Imports: 
+    Rcpp (>= 0.11.0), 
+    Seurat (>= 4.0.2), 
+    SeuratObject, 
+    stats,
+    utils
+LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 7.2.3
