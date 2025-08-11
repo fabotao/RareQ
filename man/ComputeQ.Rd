@@ -4,22 +4,22 @@
 \alias{ComputeQ}
 \title{Compute the Q values for each cell.}
 \usage{
-CreateObject(
-  embed.matrix,
-  assay.name='RNA',
-  dims = NULL
+ComputeQ(
+  sc_object,
+  assay='RNA',
+  k=6,
 )
 }
 \arguments{
-\item{embed.matrix}{Low-dimensional cell embeddings like PCA, SVD ....}
+\item{sc_object}{A seurat object containing assays, reduction, meta data etc.}
 
-\item{assay.name}{The default assay name used when creating the pseudo-Seurat object.}
+\item{assay}{The default assay name used when creating the pseudo-Seurat object.}
 
-\item{dims}{Dimensions used in finding nearest neighbors. Such as 1:50, 2:30,...}
+\item{k}{The size of neighborhood. Default is 6.}
 }
 \value{
-pseudo-Seurat object that can be used by FindRare to infer rare cell populations.
+A vector of Q values of all cells.
 }
 \description{
-Compute the Q values for each cell for users to choose rare cell clusters.
+Compute the Q values for each cell.
 }

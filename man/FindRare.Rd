@@ -7,18 +7,29 @@
 FindRare(
   sc_object,
   assay = "RNA",
+  k = 6,
+  Q_cut = 0.6,
+  ratio = 0.2,
 )
 }
 \arguments{
 \item{sc_object}{A seurat object containing assays, reduction, meta data etc.}
 
 \item{assay}{The Assay object of the input Seurat object for inferring rare cell types. Default is 'RNA'. User can adjust according to data modality.}
+
+\item{k}{The size of neighborhood in computing Q values for rare cell detection. k should be between 5 and the total nearest neighbors (e.g., 20) obtained in processing step. The default value is 6.}
+
+\item{Q_cut}{The default Q value for retaining rare clusters. Q should be between 0.5 and 1. The default value is 0.6.}
+
+\item{ratio}{The threshold for merging clusters. When the proportion of a cluster's connections with its neighboring clusters among its total connections is larger than this threshold, merge the two cell groups. The default value is 0.2.}
+
+\item{max_iter}{The maximum iterations for propagation if convergence is not reached. Default value is 100.}
 }
 \value{
 Cluster assignments of cells including major and rare cell types.
 }
 \description{
-MetaQ identifies rare cell types via mutual connectivity (Q)-based network propagation.
+RareQ identifies rare cell types via mutual connectivity (Q)-based network propagation.
 }
 \examples{
 ## Starts from counts

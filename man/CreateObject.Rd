@@ -16,6 +16,8 @@ CreateObject(
 \item{assay.name}{The default assay name used when creating the pseudo-Seurat object.}
 
 \item{dims}{Dimensions used in finding nearest neighbors. Such as 1:50, 2:30,...}
+
+\item{k.param}{The number of neighbors to be identified.}
 }
 \value{
 pseudo-Seurat object that can be used by FindRare to infer rare cell populations.
