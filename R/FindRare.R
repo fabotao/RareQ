@@ -44,7 +44,7 @@
 #'
 
 FindRare <- function(sc_object, assay='RNA', k=6, Q_cut=0.6, ratio=0.2, max_iter=100){
-  assay.all <- Assays(sc_object)
+  assay.all <- Seurat::Assays(sc_object)
   if(!assay %in% assay.all){
     stop(paste0("The ", assay," assay does not exist. Please choose from ", assay.all))
   }
