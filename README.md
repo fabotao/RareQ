@@ -24,7 +24,7 @@ For scRNA-seq, CITE-seq data and cell-segmented spatial data, count matrix is pr
   library(Seurat) 
   
   # Read example data
-  obj = readRDS('data/Jurkat.obj)  # Example data from data folder
+  obj = readRDS('data/Jurkat.RDS)  # Example data from data folder
   counts = obj@assays$RNA@counts
   
   # Preprocessing scRNA-seq data
@@ -52,56 +52,6 @@ For scRNA-seq, CITE-seq data and cell-segmented spatial data, count matrix is pr
   sc_object$cluster = cluster
   DimPlot(sc_object, group.by='cluster')
   
-```
-For scATAC-seq data, count matrix is preprocessed by Signac and Seurat 
-
-```R
-  library(RareQ)
-  library(Seurat) 
-  library(Signac)
-  
-  # Preprocessing scATAC-seq data from peak count matrix
-  ATAC <- read_mtx('peak_cell.mtx')
-  
-  set.seed(123)
-  n_peaks <- dim(ATAC$X)[1]  
-  
-  # Generate random genomic range, User can also use default genomic range using standard procedure.
-  random_gr <- GRanges(
-    seqnames = paste0("chr", sample(1:22, n_peaks, replace = TRUE)),  
-    ranges = IRanges(
-      start = sample(1:1e6, n_peaks),                                 
-      width = sample(100:500, n_peaks, replace = TRUE)                
-    ),
-    strand = "*",
-    score = rnorm(n_peaks, mean = 10, sd = 2)                       
-  )
-  
-  # Create ChromatinAssay
-  chrom_assay <- CreateChromatinAssay(
-    counts = ATAC$X,          
-    ranges = random_gr,       
-    genome = "mm10",        
-    assay = "Peak"          
-  )
-  
-  # Create Seurat object
-  seurat_atac <- CreateSeuratObject(
-    counts = chrom_assay,
-    assay = "Peak",       
-    project = "ATAC_Project"
-  )
-  
-  seurat_atac <- RunTFIDF(seurat_atac)         
-  seurat_atac <- FindTopFeatures(seurat_atac, min.cutoff = 10)  
-  seurat_atac <- RunSVD(seurat_atac)            
-  
-  seurat_atac <- RunUMAP(seurat_atac, reduction = "lsi", dims = 2:30)
-  seurat_atac <- FindNeighbors(seurat_atac, reduction = "lsi", dims = 2:30,
-                               k.param = 20, compute.SNN = F,return.neighbor = T)
-  
-  cluster = FindRare(sc_object = seurat_atac, assay = 'Peak')
-
 ```
 
 
