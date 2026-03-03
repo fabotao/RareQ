@@ -114,3 +114,9 @@ We have provided code and data to assist you in generating simulation datasets t
 ## Citation
 
 
+## Copyright
+
+This software package is distributed under MIT license.
+
+This work is free to use for academic and research purposes. Please contact [Dr. Xiao](zhengtao.xiao@xjtu.edu.cn) for commercial use of this work.
+
