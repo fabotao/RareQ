@@ -113,4 +113,4 @@ Simulation scripts are in `Simulation/`.
 - [Simulation datasets](https://zenodo.org/records/17190972/files/simulation.rar?download=1)
 
 ## Citation
-If you use RareQ in your work, please cite the corresponding publication when available.
+If you use RareQ in your work, please cite the.
