@@ -9,14 +9,15 @@
 #'   k = 6,
 #'   Q_cut = 0.6,
 #'   ratio = 0.2,
+#'   max_iter = 100
 #' )
 #'
-#' @param sc_object A seurat object containing assays, reduction, meta data etc.
-#' @param assay The Assay object of the input Seurat object for inferring rare cell types. Default is 'RNA'. User can adjust according to data modality.
-#' @param k The size of neighborhood in computing Q values for rare cell detection. k should be between 5 and the total nearest neighbors (e.g., 20) obtained in processing step. The default value is 6.
-#' @param Q_cut The default Q value for retaining rare clusters. Q should be between 0.5 and 1. The default value is 0.6.
-#' @param ratio The threshold for merging clusters. When the proportion of a cluster's connections with its neighboring clusters among its total connections is larger than this threshold, merge the two cell groups. The default value is 0.2.
-#' @param max_iter The maximum iterations for propagation if convergence is not reached. Default value is 100.
+#' @param sc_object A Seurat object containing assays, reductions, metadata, and precomputed neighbors.
+#' @param assay Name of the assay used for rare-cell identification. Default is `"RNA"`.
+#' @param k Number of nearest neighbors used to compute Q values. Must be at least 2 and no larger than the neighbor graph width from `FindNeighbors`.
+#' @param Q_cut Q-value threshold used when evaluating whether low-connectivity groups should be merged. Must be between 0 and 1.
+#' @param ratio Threshold for merging clusters based on neighbor-link ratios. Must be between 0 and 1.
+#' @param max_iter Maximum number of propagation iterations before stopping when convergence is not reached.
 #' @return Cluster assignments of cells including major and rare cell types.
 #' @export
 #' @examples
@@ -44,6 +45,22 @@
 #'
 
 FindRare <- function(sc_object, assay='RNA', k=6, Q_cut=0.6, ratio=0.2, max_iter=100){
+  if(!is.numeric(k) || length(k) != 1 || is.na(k) || k < 2){
+    stop("`k` must be a single numeric value >= 2.")
+  }
+  if(!is.numeric(Q_cut) || length(Q_cut) != 1 || is.na(Q_cut) || Q_cut < 0 || Q_cut > 1){
+    stop("`Q_cut` must be a single numeric value between 0 and 1.")
+  }
+  if(!is.numeric(ratio) || length(ratio) != 1 || is.na(ratio) || ratio < 0 || ratio > 1){
+    stop("`ratio` must be a single numeric value between 0 and 1.")
+  }
+  if(!is.numeric(max_iter) || length(max_iter) != 1 || is.na(max_iter) || max_iter < 1){
+    stop("`max_iter` must be a single numeric value >= 1.")
+  }
+
+  k <- as.integer(k)
+  max_iter <- as.integer(max_iter)
+
   assay.all <- Seurat::Assays(sc_object)
   if(!assay %in% assay.all){
     stop(paste0("The ", assay," assay does not exist. Please choose from ", assay.all))
@@ -55,7 +72,12 @@ FindRare <- function(sc_object, assay='RNA', k=6, Q_cut=0.6, ratio=0.2, max_iter
   knn.matrix <- sc_object@neighbors[[nn.slot]]@nn.idx
   knn.dist <- sc_object@neighbors[[nn.slot]]@nn.dist
   k.param = dim(knn.matrix)[2]  # The number of nearest neighbors obtained in data preprocessing.
+  if(k > k.param){
+    stop(paste0("`k` (", k, ") cannot be larger than the available neighbors from FindNeighbors (", k.param, ")."))
+  }
   N = dim(knn.matrix)[1]
+  small_cluster_threshold <- N * 0.01
+  medium_cluster_threshold <- N * 0.03
   cell.cpt <- apply(knn.matrix[,1:k],1,function(x){.get.compact(knn.matrix = knn.matrix, x, k.param=k.param)})
   clu0 <- 1:N
   change = T
@@ -144,21 +166,21 @@ FindRare <- function(sc_object, assay='RNA', k=6, Q_cut=0.6, ratio=0.2, max_iter
               }else{
                 return(as.integer(cand.cl))
               }
-            }else if(len <= (c(N * 0.01))){
+            }else if(len <= small_cluster_threshold){
               if(comb.connectivity > cand.connectivity &
                  comb.connectivity > self.connectivity &
-                 cluster.count[[cand.cl]] <= (c(N * 0.01)) &
+                 cluster.count[[cand.cl]] <= small_cluster_threshold &
                  cluster.neib.count[cand.cl]/cluster.neib.count[as.character(x)] >= ratio ){ # & mean(cell.cpt[id.x] < 0.6)
                 return(as.integer(cand.cl))
               }else if(comb.connectivity > cand.connectivity &
                        comb.connectivity > self.connectivity &
-                       cluster.count[[cand.cl]] > (c(N * 0.01)) &
+                       cluster.count[[cand.cl]] > small_cluster_threshold &
                        cluster.neib.count[cand.cl]/cluster.neib.count[as.character(x)] >= min(c(ratio + 0.1, 1)) & mean(cell.cpt[id.x]) < Q_cut){
                 return(as.integer(cand.cl))
               }else{
                 return(x)
               }
-            }else if(len > (c(N * 0.01)) & len <= N * 0.03){
+            }else if(len > small_cluster_threshold & len <= medium_cluster_threshold){
               if(self.connectivity < 0.8 &
                  comb.connectivity > cand.connectivity &
                  comb.connectivity > self.connectivity &
@@ -166,7 +188,7 @@ FindRare <- function(sc_object, assay='RNA', k=6, Q_cut=0.6, ratio=0.2, max_iter
                 return(as.integer(cand.cl))
               }else if(comb.connectivity > cand.connectivity &
                        comb.connectivity > self.connectivity &
-                       cluster.count[[cand.cl]] > (c(N * 0.01)) &
+                       cluster.count[[cand.cl]] > small_cluster_threshold &
                        cluster.neib.count[cand.cl]/cluster.neib.count[as.character(x)] >= ratio &
                        mean(cell.cpt[id.x]) < Q_cut){ #
                 return(as.integer(cand.cl))
@@ -181,7 +203,7 @@ FindRare <- function(sc_object, assay='RNA', k=6, Q_cut=0.6, ratio=0.2, max_iter
                 return(as.integer(cand.cl))
               }else if(comb.connectivity > cand.connectivity &
                        comb.connectivity > self.connectivity &
-                       cluster.count[[cand.cl]] > (c(N * 0.01)) &
+                       cluster.count[[cand.cl]] > small_cluster_threshold &
                        cluster.neib.count[cand.cl]/cluster.neib.count[as.character(x)] >= ratio){
                 return(as.integer(cand.cl))
               } else{
@@ -239,7 +261,7 @@ FindRare <- function(sc_object, assay='RNA', k=6, Q_cut=0.6, ratio=0.2, max_iter
   refined.cl <- (sapply(cluster.id, function(x){
     len <- length(x)
     x.cl = cluster.good[x[1]]
-    if(len >= N * 0.01){
+    if(len >= small_cluster_threshold){
       return(x.cl)
     }else{
       neib.id <- c(knn.matrix[x,1:min(c(len, k.param))])
@@ -286,5 +308,4 @@ FindRare <- function(sc_object, assay='RNA', k=6, Q_cut=0.6, ratio=0.2, max_iter
   }
   return(cluster.good.new)
 }
-
 
