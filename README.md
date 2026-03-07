@@ -114,3 +114,8 @@ Simulation scripts are in `Simulation/`.
 
 ## Citation
 If you use RareQ in your work, please cite the.
+
+## License
+## License
+Copyright © 2026 [XiaoLab@XJTU].
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
