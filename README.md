@@ -113,7 +113,8 @@ Simulation scripts are in `Simulation/`.
 - [Simulation datasets](https://zenodo.org/records/17190972/files/simulation.rar?download=1)
 
 ## Citation
-If you use RareQ in your work, please cite the.
+If you use RareQ in your work, please cite the:
+Fa, B., Huang, C., Ma, Y. et al. Cell neighborhood topology directs rare cell population identification. Nat Commun (2026). https://doi.org/10.1038/s41467-026-71180-x
 
 ## License
 Copyright © 2026 XiaoLab@XJTU.
