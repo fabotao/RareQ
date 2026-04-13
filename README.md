@@ -1,122 +1,120 @@
 # RareQ
-RareQ (R package) is a network-propagation-based algorithm for rare cell type identification, that demonstrates superior performance and higher scalability to existing algorithms.
+RareQ is an R package for identifying rare cell populations in single-cell and cell-segmented spatial datasets. It uses Q-value-guided network propagation and is designed to be accurate, scalable, and robust.
 
-
-## Required R modules
-```R
-    R >= 4.0.0
-    Seurat >= 4.0.2
-    Signac >= 1.9.0  # For preprocessing scATAC-seq data
+## Dependencies
+```r
+R >= 4.0.0
+Seurat >= 4.0.2
+Signac >= 1.9.0  # required only for scATAC-seq preprocessing
 ```
 
 ## Installation
-```R
-  # Install in R with devtools
-  library(devtools)
-  install_github('fabotao/RareQ')
+```r
+library(devtools)
+install_github("fabotao/RareQ")
 ```
 
-## Usage
-Example [Jurkat](https://github.com/fabotao/RareQ/blob/main/data/Jurkat.RDS) scRNA-seq data for demonstration
+## Quick start (scRNA-seq)
+The [Jurkat example dataset](https://github.com/fabotao/RareQ/blob/main/data/Jurkat.RDS) is included for demonstration.
 
-```R
-  library(RareQ)
-  library(Seurat) 
-  
-  # Read example data
-  obj = readRDS('Jurkat.RDS')  # Example data from data folder
-  counts = obj@assays$RNA@counts
-  
-  # Preprocessing scRNA-seq data
-  sc_object <- CreateSeuratObject(count=counts, project = "sc_object", min.cells = 3)
-  sc_object <- NormalizeData(sc_object)
-  sc_object <- FindVariableFeatures(sc_object, nfeatures=2000)
-  sc_object <- ScaleData(sc_object)
-  sc_object <- RunPCA(sc_object, npcs=50)
-  sc_object <- RunUMAP(sc_object, dims=1:50)
-  sc_object <- FindNeighbors(object = sc_object,
-                             k.param = 20, 
-                             compute.SNN = F, 
-                             prune.SNN = 0, 
-                             reduction = "pca", 
-                             dims = 1:50, 
-                             force.recalc = F, 
-                             return.neighbor = T)
-  
-  # Use RareQ to derive both major and rare cell clusters  
-  cluster <- FindRare(sc_object)
-  table(cluster)
-  
-  sc_object$cluster = cluster
-  DimPlot(sc_object, group.by='cluster')
-  
-```
+```r
+library(RareQ)
+library(Seurat)
 
-### (Optional)
-Though deterministic label propagation in **RareQ** has demonstrated high robustness to data shuffling, we also provide a helper function **ConsensusRare** which runs FindRare on multiple shuffled datasets to derived more robust result via consensus clustering. 
-**Attention:** It takes more time than FindRare function and is less memory efficient for large datasets due to confusion matrix.
+# Load example data
+obj <- readRDS("Jurkat.RDS")
+counts <- obj@assays$RNA@counts
 
-```R
-  library(RareQ)
-  library(Seurat) 
-  
-  # Read example data
-  obj = readRDS('Jurkat.RDS)  # Example data from data folder
-  counts = obj@assays$RNA@counts
-  
-  # Preprocessing scRNA-seq data
-  sc_object <- CreateSeuratObject(count=counts, project = "sc_object", min.cells = 3)
-  sc_object <- NormalizeData(sc_object)
-  sc_object <- FindVariableFeatures(sc_object, nfeatures=2000)
-  sc_object <- ScaleData(sc_object)
-  sc_object <- RunPCA(sc_object, npcs=50)
-  sc_object <- RunUMAP(sc_object, dims=1:50)
-  
-  # Use ConsensusRare to derive more robust result  
-  cluster <- ConsensusRare(sc_object,
-                                  assay = 'RNA',      # Use RNA assay for default  
-                                  reduction = 'pca',  # Use pca reduction
-                                  dims = 1:50,
-                                  k.param = 20,       # k.param typical in scRNA workflows
-                                  k = 6,              # k parameter for FindRare
-                                  Q_cut = 0.6,        # Q_cut parameter for FindRare                                 
-								  ratio = 0.2,        # ratio paramter for FindRare
-                                  reps = 30)          # Number of data reshuffling
+# Preprocess scRNA-seq data
+sc_object <- CreateSeuratObject(counts = counts, project = "sc_object", min.cells = 3)
+sc_object <- NormalizeData(sc_object)
+sc_object <- FindVariableFeatures(sc_object, nfeatures = 2000)
+sc_object <- ScaleData(sc_object)
+sc_object <- RunPCA(sc_object, npcs = 50)
+sc_object <- RunUMAP(sc_object, dims = 1:50)
+sc_object <- FindNeighbors(
+  object = sc_object,
+  k.param = 20,
+  compute.SNN = FALSE,
+  prune.SNN = 0,
+  reduction = "pca",
+  dims = 1:50,
+  force.recalc = FALSE,
+  return.neighbor = TRUE
 )
-  table(cluster)
-  
-  sc_object$cluster = cluster
-  DimPlot(sc_object, group.by='cluster')
+
+# Identify major and rare clusters
+cluster <- FindRare(sc_object)
+table(cluster)
+
+sc_object$cluster <- cluster
+DimPlot(sc_object, group.by = "cluster")
 ```
 
-## Tutorial
-We have tutorials to assist you in utilizing RareQ. You can locate these tutorials in the RareQ/Tutorial_example directory of the project. Additionally, we have provided related Dataset to aid you in testing and acquainting yourself with the RareQ functionality:
+## Optional: consensus clustering with `ConsensusRare`
+`FindRare` is deterministic and generally robust. If you want additional stability checks, `ConsensusRare` runs `FindRare` repeatedly on shuffled cell orders and aggregates the results through consensus clustering.
 
-[Example Datasets](https://zenodo.org/records/17190972/files/Tutorial_example.rar?download=1)
+> **Note**: `ConsensusRare` is slower and more memory-intensive than `FindRare`, especially for large datasets.
 
-a. The tutorial contains four R scripts encompassing different data modality as follows:
-1. [scRNA_analysis](https://xiaolab-xjtu.github.io/RareQ/Tutorials/scRNA_analysis.html): RareQ analysis of scRNA-seq data from Jurkat cell line
-2. [scRNA_scATAC_analysis](https://xiaolab-xjtu.github.io/RareQ/Tutorials/scRNA_scATAC_analysis.html): RareQ analysis of scRNA-seq + scATAC-seq multiome data from mouse T cells
-3. [scRNA_ADT_analysis](https://xiaolab-xjtu.github.io/RareQ/Tutorials/scRNA_ADT_analysis.html): RareQ analysis of CITE-seq data (containing both RNA and ADT modalities) from human bone marrow mononuclear cells.
-4. [Xenium_spatial_analysis](https://xiaolab-xjtu.github.io/RareQ/Tutorials/Xenium_spatial_analysis.html): RareQ analysis of Xenium spatial data from 10X Genomics from mouse brain
+```r
+library(RareQ)
+library(Seurat)
 
-b. (Optional) The tutorial for ConsensusRare is as follows:
-1. [scRNA_analysis](https://xiaolab-xjtu.github.io/RareQ/Tutorials/Consensus_Tutorial.html): ConsensusRare analysis of scRNA-seq data from Jurkat cell line
+# Load example data
+obj <- readRDS("Jurkat.RDS")
+counts <- obj@assays$RNA@counts
 
-## Simulation
-We have provided code and data to assist you in generating simulation datasets to benchmark RareQ. You can locate the Python script in the RareQ/Simulation directory of the project. 
+# Preprocess scRNA-seq data
+sc_object <- CreateSeuratObject(counts = counts, project = "sc_object", min.cells = 3)
+sc_object <- NormalizeData(sc_object)
+sc_object <- FindVariableFeatures(sc_object, nfeatures = 2000)
+sc_object <- ScaleData(sc_object)
+sc_object <- RunPCA(sc_object, npcs = 50)
+sc_object <- RunUMAP(sc_object, dims = 1:50)
 
-[Code for simulation](https://xiaolab-xjtu.github.io/RareQ/Simulation/Simulated_PBMC1_2_3.html)
+# Run consensus clustering
+cluster <- ConsensusRare(
+  sc_object,
+  assay = "RNA",
+  reduction = "pca",
+  dims = 1:50,
+  k.param = 20,
+  k = 6,
+  Q_cut = 0.6,
+  ratio = 0.2,
+  reps = 30
+)
 
-[Datasets for simulation](https://zenodo.org/records/17190972/files/simulation.rar?download=1)
+table(cluster)
+sc_object$cluster <- cluster
+DimPlot(sc_object, group.by = "cluster")
+```
 
+## Tutorials
+Tutorial HTML notebooks are available in the `Tutorials/` directory:
+
+1. [scRNA_analysis](https://xiaolab-xjtu.github.io/RareQ/Tutorials/scRNA_analysis.html): scRNA-seq analysis using Jurkat data.
+2. [scRNA_scATAC_analysis](https://xiaolab-xjtu.github.io/RareQ/Tutorials/scRNA_scATAC_analysis.html): joint scRNA-seq/scATAC-seq multiome analysis.
+3. [scRNA_ADT_analysis](https://xiaolab-xjtu.github.io/RareQ/Tutorials/scRNA_ADT_analysis.html): CITE-seq analysis with RNA and ADT modalities.
+4. [Xenium_spatial_analysis](https://xiaolab-xjtu.github.io/RareQ/Tutorials/Xenium_spatial_analysis.html): cell-segmented Xenium spatial analysis.
+
+Optional tutorial for consensus workflow:
+
+- [Consensus_Tutorial](https://xiaolab-xjtu.github.io/RareQ/Tutorials/Consensus_Tutorial.html): `ConsensusRare` on Jurkat scRNA-seq data.
+
+Related tutorial datasets:
+
+- [Tutorial example datasets](https://zenodo.org/records/17190972/files/Tutorial_example.rar?download=1)
+
+## Simulation resources
+Simulation scripts are in `Simulation/`.
+
+- [Simulation code walkthrough](https://xiaolab-xjtu.github.io/RareQ/Simulation/Simulated_PBMC1_2_3.html)
+- [Simulation datasets](https://zenodo.org/records/17190972/files/simulation.rar?download=1)
 
 ## Citation
+If you use RareQ in your work, please cite the.
 
-
-## Copyright
-
-This software package is distributed under MIT license.
-
-This work is free to use for academic and research purposes. Please contact [Dr. Xiao](zhengtao.xiao@xjtu.edu.cn) for commercial use of this work.
-
+## License
+Copyright © 2026 XiaoLab@XJTU.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
